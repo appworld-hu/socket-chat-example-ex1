@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chat</title>
+    <link rel="stylesheet" href="/css/style.css">
+  </head>
+  <body>
+    <div class="container login">
+      <h3>Belépés</h3>
+        <div class="inner">
+
+          <% if( errors  ) { %>
+          <% errors.forEach( err => { %>
+            <li class="error-msg"><%= err.msg%></li>
+          <%  } ) %>
+          <hr>
+          <% } %>
+
+          <form class="row" method="post">
+            <div class="col-12">
+              <label for="email">E-mail</label>
+              <input type="text" name="email" placeholder="E-mail cím" class="form-control">
+            </div>
+            <div class="col-12">
+              <label for="password">Jelszó</label>
+              <input type="password" name="password" placeholder="Jelszó" class="form-control">
+            </div>
+            <div class="col-12 mt-3">
+              <button>Belépés</button>
+            </div>            
+          </form>
+        </div>
+    </div>
+  </body>
+</html>

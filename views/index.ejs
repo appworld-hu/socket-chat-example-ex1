@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chat</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="users"></div>
+      <div class="chat">
+        <ul id="messages"></ul>
+        <form id="form" action="">
+          <span class="typing-info"></span>
+          <input id="input" autocomplete="off" autofocus /><button>Send</button>
+        </form>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const sender_id = "<%- sender_id%>";
+      var socket = io();
+
+      var form = document.getElementById("form");
+      var input = document.getElementById("input");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (input.value) {
+          socket.emit("chat message", {
+            message: input.value,
+            sender_id: sender_id,
+          });
+          input.value = "";
+        }
+      });
+
+      function addSenderInfo(user) {
+        document
+          .querySelectorAll('span.letter[data-sender="' + user._id + '"]')
+          .forEach((userinfo) => {
+            userinfo.innerHTML = user.name[0];
+            userinfo.classList.add(user.color);
+          });
+        document
+          .querySelectorAll('span.name[data-sender="' + user._id + '"]')
+          .forEach((userinfo) => {
+            userinfo.innerHTML = user.name;
+          });
+      }
+
+      socket.on("chat message", function (msg) {
+        messages.innerHTML += `<li><span data-sender="${msg.sender_id}" class="letter"></span> 
+          <span data-sender="${msg.sender_id}" class="name"></span> 
+          <br>
+          <span>${msg.message}</span></li>`;
+
+        window.scrollTo(0, document.body.scrollHeight);
+      });
+
+      socket.on("user", (user) => {
+        addSenderInfo(user);
+      });
+
+      socket.on("messages", function (msgs) {
+        messages.innerHTML = "";
+        for (let key in msgs) {
+          messages.innerHTML += `<li><span data-sender="${msgs[key].sender_id}"   class="letter"></span> <span data-sender="${msgs[key].sender_id}"  class="name"></span>
+            <br>
+          <span>${msgs[key].body}</span></li>`;
+
+          window.scrollTo(0, document.body.scrollHeight);
+        }
+      });
+
+      const urlParams = new URLSearchParams(window.location.search);
+      socket.emit("join", urlParams.get("room"));
+
+      function getRandomArbitrary(min, max) {
+        return Math.floor(Math.random() * (max - min) + min);
+      }
+
+      socket.on("users", (users) => {
+        console.log(JSON.stringify(users));
+        document.querySelector(".users").innerHTML = users
+          .map((user) => {
+            addSenderInfo(user);
+
+            const colors = ["brown", "lightblue", "green", "red", "tomato"];
+
+            return ` <span>
+          <span class="${user.color}" data-online="${user._id}">
+            ${sender_id == user._id ? "Te" : user.name[0].toUpperCase()}
+          </span>
+          <i>${user.name}</i>
+        </span>`;
+          })
+          .join("");
+
+        socket.emit("setonline", sender_id);
+
+        socket.on("getonline", (online) => {
+          document
+            .querySelector('[data-online="' + online + '"]')
+            .classList.add("online");
+          console.log(online);
+        });
+
+        socket.on("setoffline", (offline) => {
+          document
+            .querySelector('[data-online="' + offline + '"]')
+            .classList.remove("online");
+          console.log(online);
+        });
+      });
+
+      document.getElementById("input").oninput = function () {
+        socket.emit("setTyping", sender_id);
+      };
+
+      let typeProcess = null;
+      socket.on("typeing_name", (user) => {
+        if (user._id != sender_id) {
+          if (typeProcess) {
+            clearTimeout(typeProcess);
+            typeProcess = null;
+          }
+          document.querySelector(
+            ".typing-info"
+          ).innerText = `${user.name} éppen ír...`;
+          typeProcess = setTimeout(
+            () => (document.querySelector(".typing-info").innerText = ""),
+            2000
+          );
+        }
+      });
+    </script>
+  </body>
+</html>
